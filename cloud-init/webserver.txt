@@ -1,0 +1,42 @@
+#cloud-config
+users:
+  - default
+  - name: workshopadmin
+    gecos: workshopadmin
+    primary_group: admin
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+package upgrade: true
+package_upgrade: true
+packages:
+  - apache2
+  - nodejs
+  - npm
+runcmd:
+  - sudo mkdir -p /source
+  - sudo rm -r /var/www/html
+  - sudo mkdir -p /nodeProject && cd /nodeProject
+  - sudo npm init -y 
+  - sudo npm install express
+  - sudo npm install @azure/storage-blob
+  - sudo npm install cors
+  - sudo npm install body-parser
+  - sudo service apache2 start
+  - cd /source
+  - sudo wget https://sharedstorage24.blob.core.windows.net/fair-line/website_code.tar
+  - sudo tar -xvf website_code.tar -C /var/www/
+  - sudo mv /var/www/website_code /var/www/html
+  - sudo mv /var/www/html/api.js /nodeProject/
+  - sudo a2enmod rewrite
+  - sudo apache2ctl configtest
+  - sudo systemctl reload apache2
+  - sudo systemctl restart apache2.service
+write_files:
+  - path: /nodeProject/start.sh
+    permissions: "0775"
+    content: |
+      #!/bin/bash
+      killall node
+      node /nodeProject/api
+    owner: workshopadmin:workshopadmin
